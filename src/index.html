@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>SCRUM.POKER</title>
+    <link rel="icon"
+          href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MzMgNTMzIj48cGF0aCBkPSJNNDI1LjggMTgxLjNDMzI1IDEwNi40IDI5MC4zIDQ2LjQgMjY2LjcgMCAyNDMgNDYuNCAyMDguMyAxMDYuNCAxMDcuNSAxODEuM2MtMTcxLjkgMTI3LjgtMTAgMzA2LjEgMTMyLjIgMjA4LTkuMyA2MC45LTQxIDEwNS4zLTczIDEyNC40djE5LjZoMjAwdi0xOS42Yy0zMi4yLTE5LjEtNjMuOC02My41LTczLTEyNC40IDE0Mi4yIDk4LjEgMzA0LTgwLjIgMTMyLjEtMjA4eiIgZmlsbD0iIzAwODVGRiIvPjwvc3ZnPg">
+    <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#000000">
+    <script src="https://cdn.scaledrone.com/scaledrone-lite.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #0094FF;
+            --hover-num-text-shadow: 0px 0px 0 rgba(255, 255, 255, 0),
+            0px 0px 0 rgba(255, 255, 255, 0),
+            0px 0px 25px #0094FF,
+            0px 0px 70px #0094FF,
+            0px 0px 0 rgba(0, 133, 255, 0);
+            --num-text-shadow: 0px 0px 150px rgba(255, 255, 255, 1.0),
+            0px 0px 150px rgba(255, 255, 255, 1.0),
+            0px 0px 150px #0094FF,
+            0px 0px 40px #0094FF,
+            0px 0px 63px rgba(0, 133, 255, 1.0);
+
+            --num-font-size: calc(16px + (100 - 16) * ((100vw - 300px) / (1400 - 300)));
+
+            --btn-text-shadow: 0px 0px 40px #FFFFFF;
+            --not-voted-color: #808080;
+
+            --bg-basic: #000;
+            --bg-1: #191919
+        }
+
+        * {
+            font-family: "HelveticaNeue", Bahnschrift, "Segoe UI", Ubuntu, sans-serif;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            background: var(--bg-basic);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        .main {
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            display: flex;
+            flex-direction: row;
+        }
+
+        .main.is--observer #screen-vote {
+            display: none;
+        }
+
+        .main.is--observer #btn-bet {
+            display: none;
+        }
+
+        .icon-btn {
+            color: #fff;
+            border: none;
+            background: none;
+            font-size: 32px;
+        }
+
+        .icon-btn:hover span {
+            text-shadow: var(--btn-text-shadow);
+            cursor: pointer;
+        }
+
+        #vote-btn-wrapper {
+            max-width: 100%;
+            max-height: 100%;
+            padding: 100px;
+            height: calc(100vh - 55px);
+        }
+
+        #vote-btn-list {
+            aspect-ratio: 5 / 3;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            grid-gap: 6px;
+            max-height: 100%;
+            max-width: 100%;
+            margin: auto auto;
+        }
+
+        #vote-btn-list button {
+            font-size: min(var(--num-font-size), 100px);
+            background: #191919;
+            color: var(--not-voted-color);
+            border: none;
+            outline: none;
+            transition: color .5s ease, text-shadow .3s ease;
+        }
+
+        #vote-btn-list button:hover {
+            color: #1F78FF;
+            cursor: pointer;
+            text-shadow: var(--hover-num-text-shadow);
+        }
+
+        #vote-btn-list button.is--active {
+            color: #fff;
+            text-shadow: var(--num-text-shadow);
+        }
+
+        #vote-btn-list button:hover.is--active {
+            color: #fff;
+            text-shadow: var(--num-text-shadow);
+        }
+
+        #voter-list {
+            display: flex;
+            justify-content: space-evenly;
+            align-items: center;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            height: 55px;
+            flex-basis: 55px;
+            flex-grow: 0;
+            flex-shrink: 0;
+            width: 100%;
+            background: var(--bg-1);
+        }
+
+        .voter-list-item {
+            color: #4C4C4C;
+            transition: all .5s ease;
+        }
+
+        .voter-list-item.has-voted {
+            color: white;
+            text-shadow: 0px 0px 36px rgba(255, 255, 255, 0.66);
+        }
+
+        #name-input {
+            caret-color: var(--primary-color);
+            border: none;
+            border-bottom: 1px solid #4C4C4C;
+            background: transparent;
+            color: #fff;
+            height: 115px;
+            line-height: 115px;
+            font-size: 96px;
+            text-align: center;
+            width: 100%;
+            outline: none;
+        }
+
+        #name-input-label {
+            display: block;
+            font-size: 32px;
+            color: white;
+            opacity: 0.3;
+            text-align: center;
+        }
+
+        #screen-landing .input-container {
+            width: 718px;
+            margin: 0 auto 100px auto;
+        }
+
+        #screen-landing-inner {
+            display: flex;
+            height: 100%;
+            flex-direction: column;
+            margin: auto;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #screen-vote {
+            display: flex;
+            flex-direction: column;
+            flex-wrap: nowrap;
+            position: relative;
+        }
+
+        #show-results {
+            position: absolute;
+            border: none;
+            background: none;
+            color: #555;
+            bottom: 150px;
+            right: 16px;
+        }
+
+        #show-results:hover {
+            cursor: pointer;
+            color: #fff;
+        }
+
+        #screen-result {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .btn-role {
+            background: transparent;
+            border: none;
+            color: #fff;
+            opacity: 0.3;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            margin: 0 32px;
+            s
+        }
+
+        .btn-role:hover {
+            opacity: 1;
+            cursor: pointer;
+            text-shadow: var(--hover-num-text-shadow);
+        }
+
+        .btn-role:hover #button-role-triangle {
+            box-shadow: var(--hover-num-text-shadow);
+        }
+
+        #button-role-triangle {
+            fill: transparent;
+            stroke: white;
+            stroke-width: 10;
+        }
+
+        #role-buttons {
+            display: flex;
+        }
+
+        #result-list-wrapper {
+            width: 100%;
+            padding: 100px;
+            flex-grow: 1;
+        }
+
+        #result-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            flex-basis: 65px;
+            flex-grow: 0;
+            flex-shrink: 0;
+            padding: 0 100px;
+            margin-bottom: 100px;
+        }
+
+        #result-list {
+            display: flex;
+            margin: auto -32px;
+            flex-wrap: wrap;
+            list-style: none;
+            justify-content: space-around;
+            padding: 0;
+        }
+
+        #result-list li.is--active {
+            text-shadow: var(--num-text-shadow);
+        }
+
+        #result-list .result-num {
+            font-size: 6vw;
+        }
+
+        #result-list .result-name {
+            font-size: 2vw;
+        }
+
+        .result-list-item {
+            color: #4C4C4C;
+            margin: 0 32px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .result-list-item.has-voted {
+            color: white;
+        }
+
+        .result-list-item.has-voted .result-num {
+            text-shadow: var(--num-text-shadow);
+
+        }
+
+        .screen-wrapper {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: row;
+            transition: transform .8s cubic-bezier(.23, 0, 0, 1);
+        }
+
+        .main .screen {
+            flex-basis: 100%;
+            flex-shrink: 0;
+            flex-grow: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+<div class="main is--screen-0" id="main">
+    <div class="screen-wrapper" id="screen-wrapper">
+        <div class="screen screen-landing" id="screen-landing">
+            <div id="screen-landing-inner">
+                <div class="input-container">
+                    <input id="name-input" placeholder="Enter your name" type="text" autocomplete="false">
+                    <div id="name-input-label">NAME</div>
+                </div>
+                <div id="role-buttons">
+                    <button id="btnVoter" class="btn-role">
+                        <svg height="160" width="160">
+                            <polygon points="8,144 80,19 152,144" id="button-role-triangle"/>
+                        </svg>
+                        VOTER
+                    </button>
+                    <button id="btnObserver" class="btn-role">
+                        <svg height="160" width="160">
+                            <circle cx="80" cy="80" r="62.5" stroke="white" stroke-width="10" fill="transparent"/>
+                        </svg>
+                        OBSERVER
+                    </button>
+                </div>
+            </div>
+
+        </div>
+        <div id="screen-vote" class="screen screen-vote">
+            <div id="vote-btn-wrapper">
+                <div id="vote-btn-list"></div>
+            </div>
+            <button id="show-results">Show results</button>
+            <ul id="voter-list"></ul>
+        </div>
+        <div class="screen screen-result" id="screen-result">
+            <div id="result-list-wrapper">
+                <ul id="result-list"></ul>
+            </div>
+            <div class="result-controls" id="result-controls">
+                <button class="icon-btn" id="btn-bet"><span>BET</span></button>
+                <button class="icon-btn" id="btnClear"><span>CLEAR</span></button>
+                <button class="icon-btn" id="btnReveal"><span>REVEAL</span></button>
+            </div>
+        </div>
+    </div>
+
+</div>
+<script>
+    'use strict'
+
+    const $ = document.querySelector.bind(document),
+        $$ = document.querySelectorAll.bind(document),
+        _ = document.getElementById.bind(document),
+        makeHash = (hashLength = 42) => {
+            const u8 = new Uint8Array(hashLength)
+            window.crypto.getRandomValues(u8)
+            return BigInt('0x' + [...u8.values()]
+                .map(x => x.toString(16).padStart(2, '0')).join(''))
+                .toString(36).substr(0, hashLength)
+        },
+        me = {
+            id: null,
+            name: '',
+            vote: null,
+            isVoter: false
+        },
+        userList = [],
+        VOTE_VALUES = ['0', '½', '1', '2', '3', '5', '8', '13', '20', '40', '100', '?'],
+        KEY_ROOM = 'roomname',
+        KEY_USER = 'username',
+        EVT_VOTE = 'VOTE',
+        EVT_REVEAL = 'REVEAL',
+        EVT_CLEAR = 'CLEAR',
+        el = {
+            $main: _('main'),
+            $screenWrapper: _('screen-wrapper')
+        }
+
+    let drone = null
+    let room = null
+
+    // manage channel hash
+
+    let roomName = localStorage.getItem(KEY_ROOM) || makeHash()
+    if (43 === location.hash.length) {
+        roomName = location.hash.substr(1)
+    } else {
+        location.hash = roomName
+    }
+    localStorage.setItem(KEY_ROOM, roomName)
+    console.debug('ROOM', roomName)
+
+    // username input
+
+    const updateUsername = name => {
+        console.debug('U', name)
+        me.name = name.trim().substr(0, 30) || ''
+        localStorage.setItem(KEY_USER, me.name)
+        _('screen-landing').classList.toggle('has-valid-name', me.name !== '')
+        _('btnVoter').disabled = _('btnObserver').disabled = me.name === ''
+        return me.name
+    }
+
+    _('name-input').oninput = _('name-input').onchange = e => updateUsername(e.currentTarget.value)
+    _('name-input').value = updateUsername(localStorage.getItem(KEY_USER) || '')
+
+    // role buttons
+
+    _('btnVoter').onclick = _('btnObserver').onclick = e => {
+        me.isVoter = e.currentTarget.id === 'btnVoter'
+        initDrone()
+        if (!me.isVoter) {
+            _('main').classList.add('is--observer')
+            goToScreen(1)
+            return
+        }
+        _('main').classList.remove('is--observer')
+        goToScreen(1)
+    }
+    _('btn-bet').onclick = e => {
+        goToScreen(1)
+    }
+    _('show-results').onclick = e => {
+        me.isVoter ? goToScreen(2) : goToScreen(1)
+    }
+
+    const goToScreen = index => {
+        el.$screenWrapper.style.transform = `translate3d(${-index * 100}%, 0, 0`
+    }
+
+    const clearChildren = id => {
+        const $el = _(id)
+        while ($el.firstChild) $el.removeChild($el.firstChild)
+    }
+
+    const send = (evt, msg = null) => drone.publish({room: room.name, message: {evt, msg}})
+
+    const initDrone = () => {
+        drone = new ScaleDrone('XBNp4qa4ChWO1WXg', {data: {name: me.name, isVoter: me.isVoter}})
+        room = drone.subscribe('observable-' + roomName)
+        console.debug('INIT', drone, room)
+
+        room.on('members', members => {
+            console.debug('members', members)
+            me.id = drone.clientId
+            userList.push(me)
+            members.forEach(m => {
+                if (m.id === me.id) return
+                userList.push({
+                    id: m.id,
+                    name: m.clientData.name,
+                    isVoter: m.clientData.isVoter
+                })
+            })
+            updateAll()
+            // updateVoterList()
+        })
+
+        room.on('member_join', m => {
+            console.debug('member_join', m)
+            userList.push({
+                id: m.id,
+                name: m.clientData.name,
+                isVoter: m.clientData.isVoter
+            })
+            updateVoterList()
+            if (me.vote) send(EVT_VOTE)
+        })
+
+        room.on('member_leave', m => {
+            console.debug('member_leave', m)
+            const idx = userList.findIndex(ulm => ulm.id === m.id)
+            if (idx < 0) return
+            userList.splice(idx, 1)
+            updateVoterList()
+        })
+
+        room.on('message', msg => {
+            if (msg.clientId === me.id || !msg.data.evt) return
+            console.log('MSG', msg.clientId, msg.data)
+            switch (msg.data.evt) {
+                case EVT_VOTE:
+                    (userList.find(u => u.id === msg.clientId) || {}).vote = msg.data.msg || true
+                    updateAll()
+                    break
+                case EVT_REVEAL:
+                    send(EVT_VOTE, me.vote)
+                    break
+                case EVT_CLEAR:
+                    userList.forEach(u => u.vote = null)
+                    updateAll()
+                    break
+            }
+        })
+    }
+
+    // vote buttons
+
+    const voteButtonClicked = e => {
+        me.vote = e.currentTarget.dataset.label
+        send(EVT_VOTE, null)
+        updateAll()
+    }
+
+    const updateVoteButtons = () => {
+        const listCreated = !!_('vote-btn-list').childNodes.length
+        VOTE_VALUES.forEach(text => {
+            let btn = null
+            if (listCreated) {
+                btn = _(`vote-btn-${text}`)
+                btn.classList.toggle('is--active', text === me.vote)
+                return
+            }
+            btn = document.createElement('button')
+            btn.dataset['label'] = text
+            btn.id = 'vote-btn-' + text
+            btn.classList.toggle('is--active', text === me.vote)
+            btn.appendChild(document.createTextNode(text))
+            btn.onclick = voteButtonClicked
+            _('vote-btn-list').appendChild(btn)
+        })
+        return
+
+
+    }
+    updateVoteButtons()
+
+    // voter list
+
+    const updateVoterList = () => {
+        console.debug('UL', userList)
+        const fragVoter = document.createDocumentFragment()
+        const fragResults = document.createDocumentFragment()
+        userList.sort((a, b) => a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1).forEach(u => {
+            if (!u.isVoter) return
+
+            let voterItem = document.createElement('li')
+            voterItem.classList.add('voter-list-item')
+            let resultItem = document.createElement('li')
+            voterItem.appendChild(document.createTextNode(u.name))
+            voterItem.classList.toggle('has-voted', !!u.vote)
+            resultItem.classList.toggle('has-voted', !!u.vote)
+
+            const num = document.createElement('div')
+            num.innerText = u.vote && u.vote !== true ? u.vote : '?'
+            num.classList.add('result-num')
+            const name = document.createElement('div')
+            name.innerText = u.name
+            name.classList.add('result-name')
+            resultItem.appendChild(num)
+            resultItem.appendChild(name)
+            resultItem.classList.add('result-list-item')
+            console.debug(u.name, !!u.vote, u.vote)
+            fragVoter.appendChild(voterItem)
+            fragResults.appendChild(resultItem)
+        })
+        _('voter-list').replaceChildren(fragVoter)
+        _('result-list').replaceChildren(fragResults)
+    }
+
+    updateVoterList()
+
+    const updateAll = () => {
+        updateVoterList()
+        updateVoteButtons()
+    }
+
+    // result page
+    _('btnClear').onclick = () => {
+        send(EVT_CLEAR)
+        userList.forEach(u => u.vote = null)
+        updateAll()
+    }
+    _('btnReveal').onclick = () => {
+        send(EVT_REVEAL)
+        send(EVT_VOTE, me.vote)
+    }
+
+</script>
+</body>
+</html>
