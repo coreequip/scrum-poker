@@ -253,7 +253,7 @@
             flex-grow: 0;
             flex-shrink: 0;
             padding: 0 100px;
-            margin-bottom: 100px;
+            margin-bottom: 0 auto 100px auto;
         }
 
         #result-list {
@@ -270,11 +270,11 @@
         }
 
         #result-list .result-num {
-            font-size: 6vw;
+            font-size: min(var(--num-font-size), 100px);
         }
 
         #result-list .result-name {
-            font-size: 2vw;
+            font-size:min(2vw, 38px);
         }
 
         .result-list-item {
