@@ -3,6 +3,8 @@
 <head>
     <meta charset="utf-8">
     <title>SCRUM.POKER</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="icon"
           href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MzMgNTMzIj48cGF0aCBkPSJNNDI1LjggMTgxLjNDMzI1IDEwNi40IDI5MC4zIDQ2LjQgMjY2LjcgMCAyNDMgNDYuNCAyMDguMyAxMDYuNCAxMDcuNSAxODEuM2MtMTcxLjkgMTI3LjgtMTAgMzA2LjEgMTMyLjIgMjA4LTkuMyA2MC45LTQxIDEwNS4zLTczIDEyNC40djE5LjZoMjAwdi0xOS42Yy0zMi4yLTE5LjEtNjMuOC02My41LTczLTEyNC40IDE0Mi4yIDk4LjEgMzA0LTgwLjIgMTMyLjEtMjA4eiIgZmlsbD0iIzAwODVGRiIvPjwvc3ZnPg">
     <meta name="color-scheme" content="dark">
@@ -21,6 +23,11 @@
             0px 0px 150px #0094FF,
             0px 0px 40px #0094FF,
             0px 0px 63px rgba(0, 133, 255, 1.0);
+            --num-text-shadow-1: 0px 0px 130px rgba(255, 255, 255, 0.9),
+            0px 0px 120px rgba(255, 255, 255, 0.9),
+            0px 0px 130px #0094FF,
+            0px 0px 35px #0094FF,
+            0px 0px 55px rgba(0, 133, 255, 1.0);
 
             --num-font-size: calc(16px + (100 - 16) * ((100vw - 300px) / (1400 - 300)));
 
@@ -31,8 +38,29 @@
             --bg-1: #191919
         }
 
+        @keyframes numTextShadow {
+            0% {
+                text-shadow: var(--num-text-shadow-1);
+            }
+
+            50% {
+                text-shadow: var(--num-text-shadow);
+            }
+
+            100% {
+                text-shadow: var(--num-text-shadow-1);
+            }
+        }
+
+        @font-face {
+            font-family: 'Poppins';
+            font-style: normal;
+            font-weight: 400;
+            src: url('poppins.woff2') format('woff2')
+        }
+
         * {
-            font-family: "HelveticaNeue", Bahnschrift, "Segoe UI", Ubuntu, sans-serif;
+            font-family: "Poppins", "HelveticaNeue", Bahnschrift, "Segoe UI", Ubuntu, sans-serif;
         }
 
         html, body {
@@ -118,12 +146,15 @@
 
         #vote-btn-list button.is--active {
             color: #fff;
-            text-shadow: var(--num-text-shadow);
+            text-shadow: var(--num-text-shadow-1);
+            transition: text-shadow .2s ease;
+            animation: numTextShadow 1.3s ease .2s infinite;
+            /*text-shadow: var(--num-text-shadow);*/
         }
 
         #vote-btn-list button:hover.is--active {
             color: #fff;
-            text-shadow: var(--num-text-shadow);
+            /*text-shadow: var(--num-text-shadow);*/
         }
 
         #voter-list {
