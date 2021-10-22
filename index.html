@@ -309,7 +309,9 @@
         }
 
         #result-list li.is--active {
-            text-shadow: var(--num-text-shadow);
+            transition: text-shadow .2s ease;
+            animation: numTextShadow 1.3s ease .2s infinite;
+            /*text-shadow: var(--num-text-shadow);*/
         }
 
         #result-list .result-num {
@@ -334,7 +336,9 @@
         }
 
         .result-list-item.has-voted .result-num {
-            text-shadow: var(--num-text-shadow);
+            transition: text-shadow .2s ease;
+            animation: numTextShadow 1.3s ease .2s infinite;
+            /*text-shadow: var(--num-text-shadow);*/
 
         }
 
