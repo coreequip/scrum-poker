@@ -404,6 +404,7 @@
             flex-shrink: 0;
             flex-grow: 0;
             width: 100%;
+            overflow: hidden;
         }
     </style>
 </head>
@@ -671,7 +672,7 @@
                 resultItem.classList.toggle('has-voted', !!u.vote)
 
                 const num = document.createElement('div')
-                num.innerText = u.vote && u.vote !== true ? u.vote : '?'
+                num.innerText = u.vote && u.vote !== true && VOTE_VALUES.includes(u.vote) ? u.vote : '?'
                 num.classList.add('result-num')
                 const name = document.createElement('div')
                 name.innerText = u.name
