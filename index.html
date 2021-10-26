@@ -624,7 +624,8 @@
     // vote buttons
 
     const voteButtonClicked = e => {
-        me.vote = e.currentTarget.dataset.label
+        const clickedIndex = Array.prototype.indexOf.call(_('vote-btn-list').children, e.currentTarget)
+        me.vote = VOTE_VALUES[clickedIndex]
         send(EVT_VOTE, null)
         updateAll()
     }
