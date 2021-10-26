@@ -29,7 +29,11 @@
             0px 0px 35px #0094FF,
             0px 0px 55px rgba(0, 133, 255, 1.0);
 
-            --num-font-size: calc(16px + (100 - 16) * ((min(100vw, 100vh*1.667)  - 300px) / (1400 - 300)));
+            --aspect-ratio-matrix-width: 5;
+            --aspect-ratio-matrix-height: 3;
+            --aspect-ratio: calc(var(--aspect-ratio-matrix-width) / var(--aspect-ratio-matrix-height));
+
+            --num-font-size: calc(16px + (100 - 16) * ((min(100vw, 100vh*var(--aspect-ratio))  - 300px) / (1400 - 300)));
 
             --num-color-active: #fff;
             --num-color-acitve-darker: #e9effc;
@@ -38,7 +42,10 @@
             --not-voted-color: #808080;
 
             --bg-basic: #000;
-            --bg-1: #191919
+            --bg-1: #191919;
+
+
+
         }
 
         @keyframes numTextShadow {
@@ -47,7 +54,42 @@
                 text-shadow: var(--num-text-shadow-darker);
             }
 
-            50% {
+            3% {
+                color: var(--num-color-active);
+                text-shadow: var(--num-text-shadow);
+            }
+
+            55% {
+                color: var(--num-color-active);
+                text-shadow: var(--num-text-shadow);
+            }
+
+            58% {
+                color: var(--num-color-acitve-darker);
+                text-shadow: var(--num-text-shadow-darker);
+            }
+
+            61% {
+                color: var(--num-color-active);
+                text-shadow: var(--num-text-shadow);
+            }
+
+            85% {
+                color: var(--num-color-active);
+                text-shadow: var(--num-text-shadow);
+            }
+
+            90% {
+                color: var(--num-color-acitve-darker);
+                text-shadow: var(--num-text-shadow-darker);
+            }
+
+            95% {
+                color: var(--num-color-active);
+                text-shadow: var(--num-text-shadow);
+            }
+
+            97% {
                 color: var(--num-color-active);
                 text-shadow: var(--num-text-shadow);
             }
@@ -126,7 +168,7 @@
         }
 
         #vote-btn-list {
-            aspect-ratio: 5 / 3;
+            aspect-ratio: var(--aspect-ratio-matrix-width) / var(--aspect-ratio-matrix-height);
             display: grid;
             grid-template-columns: 1fr 1fr 1fr 1fr;
             grid-gap: 6px;
@@ -154,7 +196,7 @@
             color: #fff;
             text-shadow: var(--num-text-shadow-darker);
             transition: text-shadow .2s ease;
-            animation: numTextShadow .3s ease .2s infinite;
+            animation: numTextShadow 2.3s ease .2s infinite;
             /*text-shadow: var(--num-text-shadow);*/
         }
 
