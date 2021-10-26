@@ -473,236 +473,240 @@
 
 </div>
 <script>
-    'use strict'
+    'use strict';
 
-    const $ = document.querySelector.bind(document),
-        $$ = document.querySelectorAll.bind(document),
-        _ = document.getElementById.bind(document),
-        makeHash = (hashLength = 42) => {
-            const u8 = new Uint8Array(hashLength)
-            window.crypto.getRandomValues(u8)
-            return BigInt('0x' + [...u8.values()]
-                .map(x => x.toString(16).padStart(2, '0')).join(''))
-                .toString(36).substr(0, hashLength)
-        },
-        me = {
-            id: null,
-            name: '',
-            vote: null,
-            isVoter: false
-        },
-        userList = [],
-        VOTE_VALUES = ['0', '½', '1', '2', '3', '5', '8', '13', '20', '40', '100', '?'],
-        KEY_ROOM = 'roomname',
-        KEY_USER = 'username',
-        EVT_VOTE = 'VOTE',
-        EVT_REVEAL = 'REVEAL',
-        EVT_CLEAR = 'CLEAR',
-        el = {
-            $main: _('main'),
-            $screenWrapper: _('screen-wrapper')
+    (function() {
+        const $ = document.querySelector.bind(document),
+            $$ = document.querySelectorAll.bind(document),
+            _ = document.getElementById.bind(document),
+            makeHash = (hashLength = 42) => {
+                const u8 = new Uint8Array(hashLength)
+                window.crypto.getRandomValues(u8)
+                return BigInt('0x' + [...u8.values()]
+                    .map(x => x.toString(16).padStart(2, '0')).join(''))
+                    .toString(36).substr(0, hashLength)
+            },
+            me = {
+                id: null,
+                name: '',
+                vote: null,
+                isVoter: false
+            },
+            userList = [],
+            VOTE_VALUES = ['0', '½', '1', '2', '3', '5', '8', '13', '20', '40', '100', '?'],
+            KEY_ROOM = 'roomname',
+            KEY_USER = 'username',
+            EVT_VOTE = 'VOTE',
+            EVT_REVEAL = 'REVEAL',
+            EVT_CLEAR = 'CLEAR',
+            el = {
+                $main: _('main'),
+                $screenWrapper: _('screen-wrapper')
+            }
+
+        let drone = null
+        let room = null
+
+        // manage channel hash
+
+        let roomName = localStorage.getItem(KEY_ROOM) || makeHash()
+        if (43 === location.hash.length) {
+            roomName = location.hash.substr(1)
+        } else {
+            location.hash = roomName
+        }
+        localStorage.setItem(KEY_ROOM, roomName)
+        console.debug('ROOM', roomName)
+
+        // username input
+
+        const updateUsername = name => {
+            console.debug('U', name)
+            me.name = name.trim().substr(0, 30) || ''
+            localStorage.setItem(KEY_USER, me.name)
+            _('screen-landing').classList.toggle('has-valid-name', me.name !== '')
+            _('btnVoter').disabled = _('btnObserver').disabled = me.name === ''
+            return me.name
         }
 
-    let drone = null
-    let room = null
+        _('name-input').oninput = _('name-input').onchange = e => updateUsername(e.currentTarget.value)
+        _('name-input').value = updateUsername(localStorage.getItem(KEY_USER) || '')
 
-    // manage channel hash
+        // role buttons
 
-    let roomName = localStorage.getItem(KEY_ROOM) || makeHash()
-    if (43 === location.hash.length) {
-        roomName = location.hash.substr(1)
-    } else {
-        location.hash = roomName
-    }
-    localStorage.setItem(KEY_ROOM, roomName)
-    console.debug('ROOM', roomName)
-
-    // username input
-
-    const updateUsername = name => {
-        console.debug('U', name)
-        me.name = name.trim().substr(0, 30) || ''
-        localStorage.setItem(KEY_USER, me.name)
-        _('screen-landing').classList.toggle('has-valid-name', me.name !== '')
-        _('btnVoter').disabled = _('btnObserver').disabled = me.name === ''
-        return me.name
-    }
-
-    _('name-input').oninput = _('name-input').onchange = e => updateUsername(e.currentTarget.value)
-    _('name-input').value = updateUsername(localStorage.getItem(KEY_USER) || '')
-
-    // role buttons
-
-    _('btnVoter').onclick = _('btnObserver').onclick = e => {
-        me.isVoter = e.currentTarget.id === 'btnVoter'
-        initDrone()
-        if (!me.isVoter) {
-            _('main').classList.add('is--observer')
+        _('btnVoter').onclick = _('btnObserver').onclick = e => {
+            me.isVoter = e.currentTarget.id === 'btnVoter'
+            initDrone()
+            if (!me.isVoter) {
+                _('main').classList.add('is--observer')
+                goToScreen(1)
+                return
+            }
+            _('main').classList.remove('is--observer')
             goToScreen(1)
-            return
         }
-        _('main').classList.remove('is--observer')
-        goToScreen(1)
-    }
-    _('btn-bet').onclick = e => {
-        goToScreen(1)
-    }
-    _('show-results').onclick = e => {
-        me.isVoter ? goToScreen(2) : goToScreen(1)
-    }
+        _('btn-bet').onclick = e => {
+            goToScreen(1)
+        }
+        _('show-results').onclick = e => {
+            me.isVoter ? goToScreen(2) : goToScreen(1)
+        }
 
-    const goToScreen = index => {
-        el.$screenWrapper.style.transform = `translate3d(${-index * 100}%, 0, 0`
-    }
+        const goToScreen = index => {
+            el.$screenWrapper.style.transform = `translate3d(${-index * 100}%, 0, 0`
+        }
 
-    const clearChildren = id => {
-        const $el = _(id)
-        while ($el.firstChild) $el.removeChild($el.firstChild)
-    }
+        const clearChildren = id => {
+            const $el = _(id)
+            while ($el.firstChild) $el.removeChild($el.firstChild)
+        }
 
-    const send = (evt, msg = null) => drone.publish({room: room.name, message: {evt, msg}})
+        const send = (evt, msg = null) => drone.publish({room: room.name, message: {evt, msg}})
 
-    const initDrone = () => {
-        drone = new ScaleDrone('XBNp4qa4ChWO1WXg', {data: {name: me.name, isVoter: me.isVoter}})
-        room = drone.subscribe('observable-' + roomName)
-        console.debug('INIT', drone, room)
+        const initDrone = () => {
+            drone = new ScaleDrone('XBNp4qa4ChWO1WXg', {data: {name: me.name, isVoter: me.isVoter}})
+            room = drone.subscribe('observable-' + roomName)
+            console.debug('INIT', drone, room)
 
-        room.on('members', members => {
-            console.debug('members', members)
-            me.id = drone.clientId
-            userList.push(me)
-            members.forEach(m => {
-                if (m.id === me.id) return
+            room.on('members', members => {
+                console.debug('members', members)
+                me.id = drone.clientId
+                userList.push(me)
+                members.forEach(m => {
+                    if (m.id === me.id) return
+                    userList.push({
+                        id: m.id,
+                        name: m.clientData.name,
+                        isVoter: m.clientData.isVoter
+                    })
+                })
+                updateAll()
+                // updateVoterList()
+            })
+
+            room.on('member_join', m => {
+                console.debug('member_join', m)
                 userList.push({
                     id: m.id,
                     name: m.clientData.name,
                     isVoter: m.clientData.isVoter
                 })
+                updateVoterList()
+                if (me.vote) send(EVT_VOTE)
             })
+
+            room.on('member_leave', m => {
+                console.debug('member_leave', m)
+                const idx = userList.findIndex(ulm => ulm.id === m.id)
+                if (idx < 0) return
+                userList.splice(idx, 1)
+                updateVoterList()
+            })
+
+            room.on('message', msg => {
+                if (msg.clientId === me.id || !msg.data.evt) return
+                console.log('MSG', msg.clientId, msg.data)
+                switch (msg.data.evt) {
+                    case EVT_VOTE:
+                        (userList.find(u => u.id === msg.clientId) || {}).vote = msg.data.msg || true
+                        updateAll()
+                        break
+                    case EVT_REVEAL:
+                        send(EVT_VOTE, me.vote)
+                        break
+                    case EVT_CLEAR:
+                        userList.forEach(u => u.vote = null)
+                        updateAll()
+                        break
+                }
+            })
+        }
+
+        // vote buttons
+
+        const voteButtonClicked = e => {
+            const clickedIndex = Array.prototype.indexOf.call(_('vote-btn-list').children, e.currentTarget)
+            me.vote = VOTE_VALUES[clickedIndex]
+            send(EVT_VOTE, null)
             updateAll()
-            // updateVoterList()
-        })
+        }
 
-        room.on('member_join', m => {
-            console.debug('member_join', m)
-            userList.push({
-                id: m.id,
-                name: m.clientData.name,
-                isVoter: m.clientData.isVoter
-            })
-            updateVoterList()
-            if (me.vote) send(EVT_VOTE)
-        })
-
-        room.on('member_leave', m => {
-            console.debug('member_leave', m)
-            const idx = userList.findIndex(ulm => ulm.id === m.id)
-            if (idx < 0) return
-            userList.splice(idx, 1)
-            updateVoterList()
-        })
-
-        room.on('message', msg => {
-            if (msg.clientId === me.id || !msg.data.evt) return
-            console.log('MSG', msg.clientId, msg.data)
-            switch (msg.data.evt) {
-                case EVT_VOTE:
-                    (userList.find(u => u.id === msg.clientId) || {}).vote = msg.data.msg || true
-                    updateAll()
-                    break
-                case EVT_REVEAL:
-                    send(EVT_VOTE, me.vote)
-                    break
-                case EVT_CLEAR:
-                    userList.forEach(u => u.vote = null)
-                    updateAll()
-                    break
-            }
-        })
-    }
-
-    // vote buttons
-
-    const voteButtonClicked = e => {
-        const clickedIndex = Array.prototype.indexOf.call(_('vote-btn-list').children, e.currentTarget)
-        me.vote = VOTE_VALUES[clickedIndex]
-        send(EVT_VOTE, null)
-        updateAll()
-    }
-
-    const updateVoteButtons = () => {
-        const listCreated = !!_('vote-btn-list').childNodes.length
-        VOTE_VALUES.forEach(text => {
-            let btn = null
-            if (listCreated) {
-                btn = _(`vote-btn-${text}`)
+        const updateVoteButtons = () => {
+            const listCreated = !!_('vote-btn-list').childNodes.length
+            VOTE_VALUES.forEach(text => {
+                let btn = null
+                if (listCreated) {
+                    btn = _(`vote-btn-${text}`)
+                    btn.classList.toggle('is--active', text === me.vote)
+                    return
+                }
+                btn = document.createElement('button')
+                btn.dataset['label'] = text
+                btn.id = 'vote-btn-' + text
                 btn.classList.toggle('is--active', text === me.vote)
-                return
-            }
-            btn = document.createElement('button')
-            btn.dataset['label'] = text
-            btn.id = 'vote-btn-' + text
-            btn.classList.toggle('is--active', text === me.vote)
-            btn.appendChild(document.createTextNode(text))
-            btn.onclick = voteButtonClicked
-            _('vote-btn-list').appendChild(btn)
-        })
-        return
+                btn.appendChild(document.createTextNode(text))
+                btn.onclick = voteButtonClicked
+                _('vote-btn-list').appendChild(btn)
+            })
+            return
 
 
-    }
-    updateVoteButtons()
-
-    // voter list
-
-    const updateVoterList = () => {
-        console.debug('UL', userList)
-        const fragVoter = document.createDocumentFragment()
-        const fragResults = document.createDocumentFragment()
-        userList.sort((a, b) => a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1).forEach(u => {
-            if (!u.isVoter) return
-
-            let voterItem = document.createElement('li')
-            voterItem.classList.add('voter-list-item')
-            let resultItem = document.createElement('li')
-            voterItem.appendChild(document.createTextNode(u.name))
-            voterItem.classList.toggle('has-voted', !!u.vote)
-            resultItem.classList.toggle('has-voted', !!u.vote)
-
-            const num = document.createElement('div')
-            num.innerText = u.vote && u.vote !== true ? u.vote : '?'
-            num.classList.add('result-num')
-            const name = document.createElement('div')
-            name.innerText = u.name
-            name.classList.add('result-name')
-            resultItem.appendChild(num)
-            resultItem.appendChild(name)
-            resultItem.classList.add('result-list-item')
-            console.debug(u.name, !!u.vote, u.vote)
-            fragVoter.appendChild(voterItem)
-            fragResults.appendChild(resultItem)
-        })
-        _('voter-list').replaceChildren(fragVoter)
-        _('result-list').replaceChildren(fragResults)
-    }
-
-    updateVoterList()
-
-    const updateAll = () => {
-        updateVoterList()
+        }
         updateVoteButtons()
-    }
 
-    // result page
-    _('btnClear').onclick = () => {
-        send(EVT_CLEAR)
-        userList.forEach(u => u.vote = null)
-        updateAll()
-    }
-    _('btnReveal').onclick = () => {
-        send(EVT_REVEAL)
-        send(EVT_VOTE, me.vote)
-    }
+        // voter list
+
+        const updateVoterList = () => {
+            console.debug('UL', userList)
+            const fragVoter = document.createDocumentFragment()
+            const fragResults = document.createDocumentFragment()
+            userList.sort((a, b) => a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1).forEach(u => {
+                if (!u.isVoter) return
+
+                let voterItem = document.createElement('li')
+                voterItem.classList.add('voter-list-item')
+                let resultItem = document.createElement('li')
+                voterItem.appendChild(document.createTextNode(u.name))
+                voterItem.classList.toggle('has-voted', !!u.vote)
+                resultItem.classList.toggle('has-voted', !!u.vote)
+
+                const num = document.createElement('div')
+                num.innerText = u.vote && u.vote !== true ? u.vote : '?'
+                num.classList.add('result-num')
+                const name = document.createElement('div')
+                name.innerText = u.name
+                name.classList.add('result-name')
+                resultItem.appendChild(num)
+                resultItem.appendChild(name)
+                resultItem.classList.add('result-list-item')
+                console.debug(u.name, !!u.vote, u.vote)
+                fragVoter.appendChild(voterItem)
+                fragResults.appendChild(resultItem)
+            })
+            _('voter-list').replaceChildren(fragVoter)
+            _('result-list').replaceChildren(fragResults)
+        }
+
+        updateVoterList()
+
+        const updateAll = () => {
+            updateVoterList()
+            updateVoteButtons()
+        }
+
+        // result page
+        _('btnClear').onclick = () => {
+            send(EVT_CLEAR)
+            userList.forEach(u => u.vote = null)
+            updateAll()
+        }
+        _('btnReveal').onclick = () => {
+            send(EVT_REVEAL)
+            send(EVT_VOTE, me.vote)
+        }
+    })()
+
+
 
 </script>
 </body>
