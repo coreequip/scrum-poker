@@ -12,6 +12,7 @@
     <script src="https://cdn.scaledrone.com/scaledrone-lite.min.js"></script>
     <style>
         :root {
+            color-scheme: dark;
             --primary-color: #0094FF;
             --hover-num-text-shadow: 0px 0px 0 rgba(255, 255, 255, 0),
             0px 0px 0 rgba(255, 255, 255, 0),
@@ -20,12 +21,12 @@
             0px 0px 0 rgba(0, 133, 255, 0);
             --num-text-shadow: 0px 0px 119px rgba(255, 255, 255, 1.0),
             0px 0px 137px rgba(255, 255, 255, 1.0),
-            0px 0px 162px #0094FF,
+            0px 0px 92px #0094FF,
             0px 0px 40px #0094FF,
             0px 0px 63px rgba(0, 133, 255, 1.0);
-            --num-text-shadow-darker: 0px 0px 130px rgba(255, 255, 255, 0.9),
-            0px 0px 120px rgba(255, 255, 255, 0.9),
-            0px 0px 130px #0094FF,
+            --num-text-shadow-darker: 0px 0px 108px rgba(255, 255, 255, 0.9),
+            0px 0px 124px rgba(255, 255, 255, 0.9),
+            0px 0px 82px #0094FF,
             0px 0px 35px #0094FF,
             0px 0px 55px rgba(0, 133, 255, 1.0);
 
@@ -197,12 +198,11 @@
             text-shadow: var(--num-text-shadow-darker);
             transition: text-shadow .2s ease;
             animation: numTextShadow 2.3s ease .2s infinite;
-            /*text-shadow: var(--num-text-shadow);*/
+            z-index:1;
         }
 
         #vote-btn-list button:hover.is--active {
             color: #fff;
-            /*text-shadow: var(--num-text-shadow);*/
         }
 
         #voter-list {
