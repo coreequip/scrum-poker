@@ -614,6 +614,7 @@
                     isVoter: m.clientData.isVoter
                 })
                 updateVoterList()
+                updateResultsList()
                 if (me.vote) send(EVT_VOTE)
             })
 
@@ -623,6 +624,7 @@
                 if (idx < 0) return
                 userList.splice(idx, 1)
                 updateVoterList()
+                updateResultsList()
             })
 
             room.on('message', msg => {
@@ -679,41 +681,75 @@
         // voter list
 
         const updateVoterList = () => {
-            console.debug('UL', userList)
+            console.log('updateVoterList', userList)
             const fragVoter = document.createDocumentFragment()
-            const fragResults = document.createDocumentFragment()
             userList.sort((a, b) => a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1).forEach(u => {
                 if (!u.isVoter) return
 
                 let voterItem = document.createElement('li')
                 voterItem.classList.add('voter-list-item')
-                let resultItem = document.createElement('li')
                 voterItem.appendChild(document.createTextNode(u.name))
                 voterItem.classList.toggle('has-voted', !!u.vote)
-                resultItem.classList.toggle('has-voted', !!u.vote)
-
-                const num = document.createElement('div')
-                num.innerText = u.vote && u.vote !== true && VOTE_VALUES.includes(u.vote) ? u.vote : '?'
-                num.classList.add('result-num')
-                const name = document.createElement('div')
-                name.innerText = u.name
-                name.classList.add('result-name')
-                resultItem.appendChild(num)
-                resultItem.appendChild(name)
-                resultItem.classList.add('result-list-item')
-                console.debug(u.name, !!u.vote, u.vote)
                 fragVoter.appendChild(voterItem)
-                fragResults.appendChild(resultItem)
             })
             _('voter-list').replaceChildren(fragVoter)
-            _('result-list').replaceChildren(fragResults)
         }
 
         updateVoterList()
 
+        const updateResultsList = () => {
+            const resultList = _('result-list')
+            const actualIds = userList.map(u => u.id)
+            const currentlyDisplayedIds = [...resultList.querySelectorAll('li')].map(li => li.dataset['id'])
+            const mergedIdsObj = {} //To remove id duplicates
+            actualIds.concat(currentlyDisplayedIds).forEach(id => {
+                mergedIdsObj[id] = true
+            })
+
+            Object.keys(mergedIdsObj).forEach(id => {
+                let resultItem
+                let num
+                let name
+                resultItem = resultList.querySelector(`li[data-id="${id}"]`)
+
+                //Remove Nodeelement of user if does not exist anymore
+                if (!actualIds.includes(id)) {
+                    resultList.removeChild(resultItem)
+                    return
+                }
+
+                const user = userList.find(u => u.id === id)
+
+                num = resultItem?.querySelector('.result-num')
+                name = resultItem?.querySelector('.result-name')
+
+                //Create new item of does not exist yet
+                if (!currentlyDisplayedIds.includes(id)) {
+                    resultItem = document.createElement('li')
+                    resultItem.classList.add('result-list-item')
+                    num = document.createElement('div')
+                    num.classList.add('result-num')
+                    name = document.createElement('div')
+                    name.innerText = user.name
+                    name.classList.add('result-name')
+                    resultItem.appendChild(num)
+                    resultItem.appendChild(name)
+                    resultItem.dataset.id = id
+                    resultList.appendChild(resultItem)
+                }
+
+                num.innerText = user.vote && user.vote !== true && VOTE_VALUES.includes(user.vote) ? user.vote : '?'
+                name.innerText = user.name
+                resultItem.classList.toggle('has-voted', user.vote)
+            })
+        }
+
+        updateResultsList()
+
         const updateAll = () => {
             updateVoterList()
             updateVoteButtons()
+            updateResultsList()
         }
 
         // result page
