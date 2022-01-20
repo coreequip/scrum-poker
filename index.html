@@ -297,8 +297,10 @@
             border: none;
             background: none;
             color: #555;
-            bottom: 150px;
-            right: 16px;
+            left: 50%;
+            transform: translateY(-50%);
+            bottom: calc(100px - 3vw);
+            /*right: 16px;*/
         }
 
         #show-results svg {
@@ -699,7 +701,7 @@
 
         const updateResultsList = () => {
             const resultList = _('result-list')
-            const actualIds = userList.map(u => u.id)
+            const actualIds = userList.filter(u => u.isVoter).map(u => u.id)
             const currentlyDisplayedIds = [...resultList.querySelectorAll('li')].map(li => li.dataset['id'])
             const mergedIdsObj = {} //To remove id duplicates
             actualIds.concat(currentlyDisplayedIds).forEach(id => {
