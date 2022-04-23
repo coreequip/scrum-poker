@@ -39,7 +39,7 @@
             --aspect-ratio-matrix-height: 3;
             --aspect-ratio: calc(var(--aspect-ratio-matrix-width) / var(--aspect-ratio-matrix-height));
 
-            --num-font-size: calc(16px + (100 - 16) * ((min(100vw, 100vh*var(--aspect-ratio))  - 300px) / (1400 - 300)));
+            --num-font-size: calc(16px + (100 - 16) * ((min(100vw, 100vh * var(--aspect-ratio)) - 300px) / (1400 - 300)));
 
             --num-color-active: #fff;
             --num-color-acitve-darker: #e9effc;
@@ -49,9 +49,6 @@
 
             --bg-basic: #000;
             --bg-1: #191919;
-
-
-
         }
 
         @keyframes numTextShadow {
@@ -218,7 +215,7 @@
             text-shadow: var(--num-text-shadow-darker);
             transition: text-shadow .2s ease;
             animation: numTextShadow 2.3s ease .2s infinite;
-            z-index:1;
+            z-index: 1;
         }
 
         #vote-btn-list button:hover.is--active {
@@ -495,10 +492,10 @@
 <script>
     'use strict';
 
-    (function() {
-        console.log('Scrum Poker Pro Version 1.01')
-        console.log('Changelog:')
-        console.log('- Immediate navigation to result screen after voting')
+    (function () {
+
+        const VERSION = '1.2'
+        console.log('%c\nScrum Poker Pro™ - v%s\n ', 'color:#0085FF;font:bold 200% helvetica,sans-serif', VERSION)
 
         const $ = document.querySelector.bind(document),
             $$ = document.querySelectorAll.bind(document),
@@ -546,7 +543,7 @@
 
         const updateUsername = name => {
             console.debug('U', name)
-            me.name = name.trim().substr(0, 30) || ''
+            me.name = name.trim().substring(0, 30) || ''
             localStorage.setItem(KEY_USER, me.name)
             _('screen-landing').classList.toggle('has-valid-name', me.name !== '')
             _('btnVoter').disabled = _('btnObserver').disabled = me.name === ''
@@ -575,11 +572,6 @@
 
         const goToScreen = index => {
             el.$screenWrapper.style.transform = `translate3d(${-index * 100}%, 0, 0`
-        }
-
-        const clearChildren = id => {
-            const $el = _(id)
-            while ($el.firstChild) $el.removeChild($el.firstChild)
         }
 
         const send = (evt, msg = null) => drone.publish({room: room.name, message: {evt, msg}})
@@ -649,8 +641,17 @@
 
         const voteButtonClicked = e => {
             const clickedIndex = Array.prototype.indexOf.call(_('vote-btn-list').children, e.currentTarget)
+
             me.vote = VOTE_VALUES[clickedIndex]
-            send(EVT_VOTE, null)
+
+            // check if I am the last voter
+            if (userList.filter(u => u.isVoter && u.id !== me.id).some(u => (u.vote || null) === null)) {
+                send(EVT_VOTE, null)
+            } else {
+                send(EVT_REVEAL)
+                send(EVT_VOTE, me.vote)
+            }
+
             updateAll()
             setTimeout(() => {
                 goToScreen(2)
@@ -674,9 +675,6 @@
                 btn.onclick = voteButtonClicked
                 _('vote-btn-list').appendChild(btn)
             })
-            return
-
-
         }
         updateVoteButtons()
 
@@ -700,50 +698,30 @@
         updateVoterList()
 
         const updateResultsList = () => {
-            const resultList = _('result-list')
-            const actualIds = userList.filter(u => u.isVoter).map(u => u.id)
-            const currentlyDisplayedIds = [...resultList.querySelectorAll('li')].map(li => li.dataset['id'])
-            const mergedIdsObj = {} //To remove id duplicates
-            actualIds.concat(currentlyDisplayedIds).forEach(id => {
-                mergedIdsObj[id] = true
-            })
+            const $resultList = _('result-list')
+            const frag = new DocumentFragment()
+            const temp = document.createElement('template')
+            userList
+                // filter only voters
+                .filter(u => u.isVoter)
+                // map needed data
+                .map(u => ({
+                    id: u.id,
+                    name: u.name,
+                    value: u.vote && u.vote !== true && VOTE_VALUES.includes(u.vote) ? u.vote : '?',
+                    voted: u.vote
+                }))
+                // sort by value
+                .sort((a, b) => VOTE_VALUES.indexOf(a.value) - VOTE_VALUES.indexOf(b.value))
+                // fill template
+                .forEach(u => {
+                    temp.innerHTML = `<li class="result-list-item ${u.voted ? 'has-voted' : ''}" data-id="${u.id}"><div class="result-num">${u.value}</div><div class="result-name"></div></li>`
+                    // add name for security reason as text node
+                    temp.content.querySelector('.result-name').innerText = u.name
+                    frag.appendChild(temp.content)
+                })
 
-            Object.keys(mergedIdsObj).forEach(id => {
-                let resultItem
-                let num
-                let name
-                resultItem = resultList.querySelector(`li[data-id="${id}"]`)
-
-                //Remove Nodeelement of user if does not exist anymore
-                if (!actualIds.includes(id)) {
-                    resultList.removeChild(resultItem)
-                    return
-                }
-
-                const user = userList.find(u => u.id === id)
-
-                num = resultItem?.querySelector('.result-num')
-                name = resultItem?.querySelector('.result-name')
-
-                //Create new item of does not exist yet
-                if (!currentlyDisplayedIds.includes(id)) {
-                    resultItem = document.createElement('li')
-                    resultItem.classList.add('result-list-item')
-                    num = document.createElement('div')
-                    num.classList.add('result-num')
-                    name = document.createElement('div')
-                    name.innerText = user.name
-                    name.classList.add('result-name')
-                    resultItem.appendChild(num)
-                    resultItem.appendChild(name)
-                    resultItem.dataset.id = id
-                    resultList.appendChild(resultItem)
-                }
-
-                num.innerText = user.vote && user.vote !== true && VOTE_VALUES.includes(user.vote) ? user.vote : '?'
-                name.innerText = user.name
-                resultItem.classList.toggle('has-voted', user.vote)
-            })
+            $resultList.replaceChildren(frag)
         }
 
         updateResultsList()
@@ -765,9 +743,6 @@
             send(EVT_VOTE, me.vote)
         }
     })()
-
-
-
 </script>
 </body>
 </html>
