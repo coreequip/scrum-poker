@@ -16,7 +16,7 @@ Scrumpoker Pro uses the modified Fibonacci sequence.
 On the voting page the voter can select his estimate on a matrix of values.
 The user listing bar indicates who joined the room and if he already made his estimate. 
 
-##Results
+## Results
 The result page list the voters and indicates indicates who already made his vote.
 Intially the results are hidden and can be shown by clicking the "Reveal" button.
 The "Clear" button deletes the estimates to vote for a new story.
