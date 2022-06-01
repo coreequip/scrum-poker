@@ -42,7 +42,7 @@
             --num-font-size: calc(16px + (100 - 16) * ((min(100vw, 100vh * var(--aspect-ratio)) - 300px) / (1400 - 300)));
 
             --num-color-active: #fff;
-            --num-color-acitve-darker: #e9effc;
+            --num-color-active-darker: #e9effc;
 
             --btn-text-shadow: 0px 0px 40px #FFFFFF;
             --not-voted-color: #808080;
@@ -53,7 +53,7 @@
 
         @keyframes numTextShadow {
             0% {
-                color: var(--num-color-acitve-darker);
+                color: var(--num-color-active-darker);
                 text-shadow: var(--num-text-shadow-darker);
             }
 
@@ -68,7 +68,7 @@
             }
 
             58% {
-                color: var(--num-color-acitve-darker);
+                color: var(--num-color-active-darker);
                 text-shadow: var(--num-text-shadow-darker);
             }
 
@@ -83,7 +83,7 @@
             }
 
             90% {
-                color: var(--num-color-acitve-darker);
+                color: var(--num-color-active-darker);
                 text-shadow: var(--num-text-shadow-darker);
             }
 
@@ -98,7 +98,7 @@
             }
 
             100% {
-                color: var(--num-color-acitve-darker);
+                color: var(--num-color-active-darker);
                 text-shadow: var(--num-text-shadow-darker);
             }
         }
@@ -130,7 +130,14 @@
             width: 100%;
             height: 100%;
             margin: 0;
+        }
+
+        body {
             background: var(--bg-basic);
+        }
+
+        body:not(.loading) {
+            transition: background-color 1s ease;
         }
 
         * {
@@ -406,11 +413,18 @@
         }
 
         .result-list-item.has-voted .result-num {
-            transition: text-shadow .2s ease;
-            animation: numTextShadow 1.3s ease .2s infinite;
+            transition: text-shadow .2s ease, transform 1.5s ease;
+            transform: scale(1);
+            animation: numTextShadow 1.3s ease 0s infinite;
             /*text-shadow: var(--num-text-shadow);*/
-
         }
+
+        .lucky-reveal .result-list-item.has-voted .result-num {
+            transform: scale(1.2);
+            transition: text-shadow .2s ease, transform 0.4s cubic-bezier(.22,0,.05,1.34);
+            /*text-shadow: var(--num-text-shadow);*/
+        }
+
 
         .screen-wrapper {
             width: 100%;
@@ -429,7 +443,7 @@
         }
     </style>
 </head>
-<body>
+<body class="loading">
 <div class="main is--screen-0" id="main">
     <div class="screen-wrapper" id="screen-wrapper">
         <div class="screen screen-landing" id="screen-landing">
@@ -494,8 +508,9 @@
 
     (function () {
 
-        const VERSION = '1.2'
+        const VERSION = '1.3'
         console.log('%c\nScrum Poker Pro™ - v%s\n ', 'color:#0085FF;font:bold 200% helvetica,sans-serif', VERSION)
+        console.log('%c\n- Added animation for vote unity \n- Bugfixes: Auto-reveal\n', 'color:#0085FF;font:bold 120% helvetica,sans-serif')
 
         const $ = document.querySelector.bind(document),
             $$ = document.querySelectorAll.bind(document),
@@ -527,6 +542,9 @@
 
         let drone = null
         let room = null
+
+        const $body = $('body');
+        $body.classList.remove('loading');
 
         // manage channel hash
 
@@ -575,6 +593,126 @@
         }
 
         const send = (evt, msg = null) => drone.publish({room: room.name, message: {evt, msg}})
+
+
+        const voteButtonClicked = e => {
+            const clickedIndex = Array.prototype.indexOf.call(_('vote-btn-list').children, e.currentTarget)
+
+            me.vote = VOTE_VALUES[clickedIndex]
+
+            send(EVT_VOTE, null)
+
+            // check if I am the last voter
+            // if (userList.filter(u => u.isVoter && u.id !== me.id).some(u => (u.vote || null) === null)) {
+            //     send(EVT_VOTE, null)
+            // } else {
+            //     send(EVT_REVEAL)
+            //     send(EVT_VOTE, me.vote) //@Stefan da unnötig da schon im case EVT_REVEAL?? Siehe 630?
+            // }
+
+            updateAll()
+            setTimeout(() => {
+                goToScreen(2)
+            }, 250)
+        }
+
+        const updateVoteButtons = () => {
+            const listCreated = !!_('vote-btn-list').childNodes.length
+            VOTE_VALUES.forEach(text => {
+                let btn = null
+                if (listCreated) {
+                    btn = _(`vote-btn-${text}`)
+                    btn.classList.toggle('is--active', text === me.vote)
+                    return
+                }
+                btn = document.createElement('button')
+                btn.dataset['label'] = text
+                btn.id = 'vote-btn-' + text
+                btn.classList.toggle('is--active', text === me.vote)
+                btn.appendChild(document.createTextNode(text))
+                btn.onclick = voteButtonClicked
+                _('vote-btn-list').appendChild(btn)
+            })
+        }
+        updateVoteButtons()
+
+        // voter list
+
+        const updateVoterList = () => {
+            console.log('updateVoterList', userList)
+            const fragVoter = document.createDocumentFragment()
+            userList.sort((a, b) => a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1).forEach(u => {
+                if (!u.isVoter) return
+
+                let voterItem = document.createElement('li')
+                voterItem.classList.add('voter-list-item')
+                voterItem.appendChild(document.createTextNode(u.name))
+                voterItem.classList.toggle('has-voted', !!u.vote)
+                fragVoter.appendChild(voterItem)
+            })
+            _('voter-list').replaceChildren(fragVoter)
+        }
+
+        updateVoterList()
+
+
+        const luckyRevealAnim = () => {
+            const $body = document.querySelector('body');
+            $body.style.background = '#fff';
+            $body.style.transitionDuration = '0.1s';
+            setTimeout(() => {
+                $body.style.transitionDuration = '1.5s';
+                $body.style.removeProperty('background');
+                setTimeout(() => {
+                    $body.classList.add('lucky-reveal');
+                    setTimeout(() => {
+                        $body.classList.remove('lucky-reveal')
+                    }, 1000);
+                })
+            }, 100);
+        }
+
+        const updateResultsList = () => {
+            const $resultList = _('result-list')
+            const frag = new DocumentFragment()
+            const temp = document.createElement('template')
+            userList
+                // filter only voters
+                .filter(u => u.isVoter)
+                // map needed data
+                .map(u => ({
+                    id: u.id,
+                    name: u.name,
+                    value: u.vote && u.vote !== true && VOTE_VALUES.includes(u.vote) ? u.vote : '?',
+                    voted: u.vote
+                }))
+                // sort by value
+                .sort((a, b) => VOTE_VALUES.indexOf(a.value) - VOTE_VALUES.indexOf(b.value))
+                // fill template
+                .forEach(u => {
+                    temp.innerHTML = `<li class="result-list-item ${u.voted ? 'has-voted' : ''}" data-id="${u.id}"><div class="result-num">${u.value}</div><div class="result-name"></div></li>`
+                    // add name for security reason as text node
+                    temp.content.querySelector('.result-name').innerText = u.name
+                    frag.appendChild(temp.content)
+                })
+            console.log('userlist', userList);
+            const firstVote = userList.length ? userList[0].vote : undefined //Just to have one of the values to make checks on it
+            if (userList.length > 1 &&
+                userList.filter(u => u.isVoter).every(user => user.vote === firstVote && firstVote)) {
+                luckyRevealAnim();
+                // luckyRevealAnim2();
+            }
+
+            $resultList.replaceChildren(frag)
+        }
+
+        updateResultsList()
+
+        const updateAll = () => {
+            updateVoterList()
+            updateVoteButtons()
+            updateResultsList()
+        }
 
         const initDrone = () => {
             drone = new ScaleDrone('XBNp4qa4ChWO1WXg', {data: {name: me.name, isVoter: me.isVoter}})
@@ -639,99 +777,6 @@
 
         // vote buttons
 
-        const voteButtonClicked = e => {
-            const clickedIndex = Array.prototype.indexOf.call(_('vote-btn-list').children, e.currentTarget)
-
-            me.vote = VOTE_VALUES[clickedIndex]
-
-            // check if I am the last voter
-            if (userList.filter(u => u.isVoter && u.id !== me.id).some(u => (u.vote || null) === null)) {
-                send(EVT_VOTE, null)
-            } else {
-                send(EVT_REVEAL)
-                send(EVT_VOTE, me.vote)
-            }
-
-            updateAll()
-            setTimeout(() => {
-                goToScreen(2)
-            }, 250)
-        }
-
-        const updateVoteButtons = () => {
-            const listCreated = !!_('vote-btn-list').childNodes.length
-            VOTE_VALUES.forEach(text => {
-                let btn = null
-                if (listCreated) {
-                    btn = _(`vote-btn-${text}`)
-                    btn.classList.toggle('is--active', text === me.vote)
-                    return
-                }
-                btn = document.createElement('button')
-                btn.dataset['label'] = text
-                btn.id = 'vote-btn-' + text
-                btn.classList.toggle('is--active', text === me.vote)
-                btn.appendChild(document.createTextNode(text))
-                btn.onclick = voteButtonClicked
-                _('vote-btn-list').appendChild(btn)
-            })
-        }
-        updateVoteButtons()
-
-        // voter list
-
-        const updateVoterList = () => {
-            console.log('updateVoterList', userList)
-            const fragVoter = document.createDocumentFragment()
-            userList.sort((a, b) => a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1).forEach(u => {
-                if (!u.isVoter) return
-
-                let voterItem = document.createElement('li')
-                voterItem.classList.add('voter-list-item')
-                voterItem.appendChild(document.createTextNode(u.name))
-                voterItem.classList.toggle('has-voted', !!u.vote)
-                fragVoter.appendChild(voterItem)
-            })
-            _('voter-list').replaceChildren(fragVoter)
-        }
-
-        updateVoterList()
-
-        const updateResultsList = () => {
-            const $resultList = _('result-list')
-            const frag = new DocumentFragment()
-            const temp = document.createElement('template')
-            userList
-                // filter only voters
-                .filter(u => u.isVoter)
-                // map needed data
-                .map(u => ({
-                    id: u.id,
-                    name: u.name,
-                    value: u.vote && u.vote !== true && VOTE_VALUES.includes(u.vote) ? u.vote : '?',
-                    voted: u.vote
-                }))
-                // sort by value
-                .sort((a, b) => VOTE_VALUES.indexOf(a.value) - VOTE_VALUES.indexOf(b.value))
-                // fill template
-                .forEach(u => {
-                    temp.innerHTML = `<li class="result-list-item ${u.voted ? 'has-voted' : ''}" data-id="${u.id}"><div class="result-num">${u.value}</div><div class="result-name"></div></li>`
-                    // add name for security reason as text node
-                    temp.content.querySelector('.result-name').innerText = u.name
-                    frag.appendChild(temp.content)
-                })
-
-            $resultList.replaceChildren(frag)
-        }
-
-        updateResultsList()
-
-        const updateAll = () => {
-            updateVoterList()
-            updateVoteButtons()
-            updateResultsList()
-        }
-
         // result page
         _('btnClear').onclick = () => {
             send(EVT_CLEAR)
@@ -742,6 +787,7 @@
             send(EVT_REVEAL)
             send(EVT_VOTE, me.vote)
         }
+
     })()
 </script>
 </body>
